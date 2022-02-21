@@ -1,1 +1,2 @@
-# 2.S007_MIT
+# 2.S007_MIT NEET
+**Autonomous Machines Design and Manufacturing**
