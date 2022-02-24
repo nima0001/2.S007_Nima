@@ -7,36 +7,34 @@ const float non_black_threshold = 0.85; //y value after which bot is confident t
 const float black_threshold = 0.65; //confidently black below this value
 int n; //number of sensors in black line
   
-int black_cross_num; 
+int black_cross_num; //number of times bot has crossed horizontal black lines since the start of the program
+
 
 //PID Variables:
 float y = 3.0; //target value
-
-float integral;
-float previousError;
+const float delta_t = 50.0;//Time between subsequent execution of controller
+float integral; //integral(y) value
+float previousError; //for derivative calculation de/dt = (e1 - e0)/dt
 
 const float Kp = 140.0; //Proportional parameter 
 const float Ki = 0.0;     //Integral Parameter
 const float Kd = 40.0;  //Derivative parameter 
-const float delta_t = 50.0;//Time between subsequent execution of controller
 
 
 
 //LED:
 #define LED 42
 
+
 //MOTION CONTROL:
-const int Speed = 100;
 #include <Adafruit_MotorShield.h>
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 Adafruit_DCMotor *motorLeft = AFMS.getMotor(1);
 Adafruit_DCMotor *motorRight = AFMS.getMotor(2);
+
+const int Speed = 100; 
 float frac = 0.95; //left_speed = frac* right_speed
 
-
-
-int mode = 1; //for PHW 2 
-bool over = false;
 
 
 
@@ -70,7 +68,6 @@ void setup() {
 
 
 
-
 void loop() {
   float StartTime = micros();
    
@@ -78,36 +75,25 @@ void loop() {
   Serial.println(y_prime); 
    
   if (n == 5) { //if all sensors detect black surface
-    communicate_status(); //blink LED as bot crosses horizontal lines   
+    communicate_status(1); //blink LED as bot crosses horizontal lines and stop bot's motion when it reaches destination
   }
   
   else{ 
     PID(y_prime); 
+    
+    //NO CODES DOWN HERE: making sure PID execution Time period/frequency is constant
+    float CurrentTime = micros();
+    float elapsedTime = ((CurrentTime - StartTime))/1000.0;
+    delay(delta_t - elapsedTime);    
   }
+  
 }
 
 
 
-
-
-void PID(float yp) {
-  /*
-   * Implement PID controller given current y_value
-   */
-  float error = y - yp; 
-
-  integral += error * delta_t; //right reimann sum or right rectangle piece-wise approx.
-  float derivative = (error - previousError)/delta_t; //forward difference or forward Euler
-
-  float del = Kp*error + Ki*integral + Kd*derivative;
-  previousError = error;
-  drive(Speed - del, Speed + del); //move wheel to adjust y value  
-}
-
-
-
-
-
+/*
+************************************************************************************************************************************************
+*/
 
 float get_yprime() {
   /*
@@ -142,9 +128,23 @@ float get_yprime() {
 
 
 
+void PID(float yp) {
+  /*
+   * Implement PID controller given current y_value
+   */
+  float error = y - yp; 
+
+  integral += error * delta_t; //right reimann sum or right rectangle piece-wise approx.
+  float derivative = (error - previousError)/delta_t; //forward difference or forward Euler
+
+  float del = Kp*error + Ki*integral + Kd*derivative;
+  previousError = error;
+  drive(Speed - del, Speed + del); //move wheel to adjust y value  
+}
 
 
-void communicate_status() {
+
+void communicate_status(int mode) {
     brake();
     black_cross_num++; //increase counter for number of black lines crossed
     blink_led(black_cross_num);   
@@ -170,17 +170,13 @@ void communicate_status() {
     }
       
     delay(200); //  //to cross that line without using PID
-
 }
 
 
 
-
-
-
-
-
-
+/*
+************************************************************************************************************************************************
+*/
 
 
 //MOTION CONTROL FUNCTIONS:
@@ -215,6 +211,8 @@ void drive_backward(int motorSpeed) {
   motorLeft->setSpeed(motorSpeed*frac);  
   motorRight->setSpeed(motorSpeed); 
 }
+
+
 
 
 //LED blink count black crossings:
