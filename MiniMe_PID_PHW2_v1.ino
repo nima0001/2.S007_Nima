@@ -14,10 +14,10 @@ float y = 3.0; //target value
 
 float integral;
 float previousError;
-const float Kp = 30.0; //Proportional parameter 
+const float Kp = 20.0; //Proportional parameter 
 const float Ki = 0.0;     //Integral Parameter
-const float Kd = 0.0;  //Derivative parameter 
-const float delta_t = 200.0;//random: initial Time between subsequent execution of controller
+const float Kd = 5.0;  //Derivative parameter 
+const float delta_t = 150.0;//random: initial Time between subsequent execution of controller
 
 
 
@@ -25,7 +25,7 @@ const float delta_t = 200.0;//random: initial Time between subsequent execution 
 #define LED 42
 
 //MOTION CONTROL:
-const int Speed = 100;
+const int Speed = 70;
 #include <Adafruit_MotorShield.h>
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 Adafruit_DCMotor *motorLeft = AFMS.getMotor(1);
@@ -76,7 +76,7 @@ void loop() {
   y_prime = get_yprime(); //get current y-value //takes about 30ms 
   Serial.println(y_prime); 
    
-  if (n == 5) { //if all sensors detect black surface
+  if (n >= 4) { //if all sensors detect black surface
     communicate_status(); //blink LED as bot crosses horizontal lines   
     
   }
@@ -86,6 +86,7 @@ void loop() {
     //NO CODES DOWN HERE: making sure PID execution Time period/frequency is constant
     float CurrentTime = micros();
     float elapsedTime = ((CurrentTime - StartTime))/1000.0;
+    
     Serial.print("elapsed time = ");  Serial.println(elapsedTime); Serial.println();
     delay(delta_t - elapsedTime);
 
